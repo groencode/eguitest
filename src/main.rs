@@ -3,7 +3,7 @@
 use env_logger;
 use eframe::{egui, Theme};
 use egui::{Id, Visuals};
-use egui::panel::TopBottomSide;
+use egui::panel::{Side, TopBottomSide};
 
 fn main() -> Result<(), eframe::Error> {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
@@ -21,11 +21,17 @@ fn main() -> Result<(), eframe::Error> {
     )
 }
 
+
+#[derive(PartialEq)]
+enum LeftMenuEnum { First, Second, Third }
+
+
 struct MyApp {
     is_running: bool,
     is_fullscreen: bool,
     is_popup_shown: bool,
     is_dark: bool,
+    left_menu: LeftMenuEnum,
     name: String,
     age: u32,
 }
@@ -37,6 +43,7 @@ impl Default for MyApp {
             is_fullscreen: false,
             is_popup_shown: true,
             is_dark: false,
+            left_menu: LeftMenuEnum::First,
             name: "Arthur".to_owned(),
             age: 42,
         }
@@ -141,11 +148,34 @@ impl MyApp {
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        // Create a few panels and controls to show how to create a UI with egui.
         ctx.set_visuals(if self.is_dark { Visuals::dark() } else { Visuals::light() });
         self.handle_close(frame);
         frame.set_fullscreen(self.is_fullscreen);
-        self.handle_popup_window(ctx);
         self.add_top_panel(ctx);
-        self.handle_center_panel(ctx);
+
+        egui::SidePanel::new(Side::Left, Id::new("left_panel"))
+            .show(ctx, |ui| {
+                ui.selectable_value(&mut self.left_menu, LeftMenuEnum::First, "First");
+                ui.selectable_value(&mut self.left_menu, LeftMenuEnum::Second, "Second");
+                ui.selectable_value(&mut self.left_menu, LeftMenuEnum::Third, "Third");
+            });
+
+        match self.left_menu {
+            LeftMenuEnum::First => {
+                self.handle_center_panel(ctx);
+                self.handle_popup_window(ctx);
+            },
+            LeftMenuEnum::Second => {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    ui.label("Second panel");
+                });
+            },
+            LeftMenuEnum::Third => {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    ui.label("Third panel");
+                });
+            }
+        }
     }
 }
