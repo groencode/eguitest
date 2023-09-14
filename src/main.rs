@@ -2,6 +2,8 @@
 
 use env_logger;
 use eframe::{egui, Theme};
+use egui::{Id, Visuals};
+use egui::panel::TopBottomSide;
 
 fn main() -> Result<(), eframe::Error> {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
@@ -23,6 +25,7 @@ struct MyApp {
     is_running: bool,
     is_fullscreen: bool,
     is_popup_shown: bool,
+    is_dark: bool,
     name: String,
     age: u32,
 }
@@ -33,6 +36,7 @@ impl Default for MyApp {
             is_running: true,
             is_fullscreen: false,
             is_popup_shown: true,
+            is_dark: false,
             name: "Arthur".to_owned(),
             age: 42,
         }
@@ -56,6 +60,35 @@ impl MyApp {
                 }
             });
         }
+    }
+
+    fn add_top_panel(&mut self, ctx: &egui::Context) {
+        egui::TopBottomPanel::new(TopBottomSide::Top, Id::new("top_panel"))
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.menu_button("File", |ui| {
+                        if ui.button("Set age to 45").clicked() {
+                            self.age = 45;
+                        }
+                        if ui.button("Close the menu").clicked() {
+                            ui.close_menu();
+                        }
+                    });
+                    ui.menu_button("Edit", |ui| {
+                        if ui.button("Copy").clicked() {}
+                        if ui.button("Paste").clicked() {}
+                        if self.is_dark {
+                            if ui.button("Set light").clicked() {
+                                self.is_dark = false;
+                            }
+                        } else {
+                            if ui.button("Set dark").clicked() {
+                                self.is_dark = true;
+                            }
+                        }
+                    });
+                });
+            });
     }
 
     fn handle_center_panel(&mut self, ctx: &egui::Context) {
@@ -108,9 +141,11 @@ impl MyApp {
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        ctx.set_visuals(if self.is_dark { Visuals::dark() } else { Visuals::light() });
         self.handle_close(frame);
         frame.set_fullscreen(self.is_fullscreen);
         self.handle_popup_window(ctx);
+        self.add_top_panel(ctx);
         self.handle_center_panel(ctx);
     }
 }
