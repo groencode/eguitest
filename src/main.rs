@@ -22,6 +22,7 @@ fn main() -> Result<(), eframe::Error> {
 struct MyApp {
     is_running: bool,
     is_fullscreen: bool,
+    is_popup_shown: bool,
     name: String,
     age: u32,
 }
@@ -31,20 +32,44 @@ impl Default for MyApp {
         Self {
             is_running: true,
             is_fullscreen: false,
+            is_popup_shown: true,
             name: "Arthur".to_owned(),
             age: 42,
         }
     }
 }
 
-impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+impl MyApp {
+
+    fn handle_close(&self, frame: &mut eframe::Frame) {
         if !self.is_running {
             frame.close();
         }
-        frame.set_fullscreen(self.is_fullscreen);
+    }
+
+    fn handle_popup_window(&mut self, ctx: &egui::Context) {
+        if self.is_popup_shown {
+            egui::Window::new("Pop window").show(ctx, |ui| {
+                ui.label("Started a window!");
+                if ui.button("Close").clicked() {
+                    self.is_popup_shown = false;
+                }
+            });
+        }
+    }
+
+    fn handle_center_panel(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ctx.set_pixels_per_point(2f32);
+
+            // Looking for a better way:
+            egui::menu::bar(ui, |contents| {
+                if contents.button("File").clicked() {
+                    self.age = 5;
+                }
+            });
+
+            // Start of main panel
             ui.heading("My egui Application");
             ui.horizontal(|ui| {
                 let name_label = ui.label("Your name: ");
@@ -66,7 +91,6 @@ impl eframe::App for MyApp {
                 self.is_fullscreen = !self.is_fullscreen;
             }
 
-
             // A `scope` creates a temporary [`Ui`] in which you can change settings:
             ui.scope(|ui| {
                 ui.visuals_mut().override_text_color = Some(egui::Color32::RED);
@@ -79,5 +103,14 @@ impl eframe::App for MyApp {
             }); // the temporary settings are reverted here
 
         });
+    }
+}
+
+impl eframe::App for MyApp {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        self.handle_close(frame);
+        frame.set_fullscreen(self.is_fullscreen);
+        self.handle_popup_window(ctx);
+        self.handle_center_panel(ctx);
     }
 }
